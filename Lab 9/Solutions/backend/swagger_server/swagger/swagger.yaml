@@ -1,0 +1,688 @@
+openapi: 3.0.0
+info:
+  title: Server for chatting
+  description: API for chatting between the clients
+  contact:
+    email: kontakt@lukaszszczesniak.com
+  version: 2.2.0
+servers:
+- url: /
+tags:
+- name: login
+  description: Login of users
+- name: users
+  description: Users handling
+- name: privatemessages
+  description: Private messages handling
+- name: broadcastmessages
+  description: Broadcast messages handling
+paths:
+  /register:
+    post:
+      tags:
+      - login
+      summary: Register new user in system
+      description: Register new user in system by creating new login and setting password
+      operationId: register_post
+      requestBody:
+        $ref: '#/components/requestBodies/NewUser'
+      responses:
+        "201":
+          description: "Register successful, new user created"
+        "400":
+          description: Invalid arguments
+        "409":
+          description: That login already exists
+      security: []
+      x-openapi-router-controller: swagger_server.controllers.login_controller
+  /login:
+    post:
+      tags:
+      - login
+      summary: Login to system
+      description: Logs the user to the system using login
+      operationId: login_post
+      parameters:
+      - name: login
+        in: query
+        description: User login
+        required: true
+        style: form
+        explode: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: Session token
+          content:
+            application/json:
+              schema:
+                type: string
+                example: "123908129038190283"
+                x-content-type: application/json
+        "404":
+          description: Login not found
+      security: []
+      x-openapi-router-controller: swagger_server.controllers.login_controller
+  /logout:
+    post:
+      tags:
+      - login
+      summary: Logout from the system
+      operationId: logout_post
+      parameters:
+      - name: token
+        in: header
+        description: User token
+        required: true
+        style: simple
+        explode: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: Logout successful
+        "401":
+          description: Unauthorized
+      x-openapi-router-controller: swagger_server.controllers.login_controller
+  /users:
+    get:
+      tags:
+      - users
+      summary: Get informations about all users
+      operationId: users_get
+      parameters:
+      - name: token
+        in: header
+        description: User token
+        required: true
+        style: simple
+        explode: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/User'
+                x-content-type: application/json
+        "401":
+          description: Unauthorized
+      x-openapi-router-controller: swagger_server.controllers.users_controller
+  /users/{userId}:
+    get:
+      tags:
+      - users
+      summary: Get informations about specific user
+      operationId: user_get
+      parameters:
+      - name: token
+        in: header
+        description: User token
+        required: true
+        style: simple
+        explode: true
+        schema:
+          type: string
+      - name: userId
+        in: path
+        description: ID of user to return
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: integer
+          description: Unique identifier for the wanted user
+          example: 0
+      responses:
+        "200":
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        "400":
+          description: Invalid ID supplied
+        "401":
+          description: Unauthorized
+      x-openapi-router-controller: swagger_server.controllers.users_controller
+  /users/isActive/{userId}:
+    get:
+      tags:
+      - users
+      summary: Get availability status of specific user
+      operationId: user_isactive_get
+      parameters:
+      - name: token
+        in: header
+        description: User token
+        required: true
+        style: simple
+        explode: true
+        schema:
+          type: string
+      - name: userId
+        in: path
+        description: ID of user to return
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: integer
+          description: Unique identifier for the wanted user
+          example: 0
+      responses:
+        "200":
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                type: boolean
+                x-content-type: application/json
+        "400":
+          description: Invalid ID supplied
+        "401":
+          description: Unauthorized
+      x-openapi-router-controller: swagger_server.controllers.users_controller
+  /privatemessages:
+    post:
+      tags:
+      - privatemessages
+      summary: Post new private message for specific user
+      operationId: privatemessages_post
+      parameters:
+      - name: token
+        in: header
+        description: User token
+        required: true
+        style: simple
+        explode: true
+        schema:
+          type: string
+      requestBody:
+        $ref: '#/components/requestBodies/NewPrivateMessage'
+      responses:
+        "201":
+          description: "Successful, new message send"
+        "400":
+          description: Invalid ID supplied
+        "401":
+          description: Unauthorized
+      x-openapi-router-controller: swagger_server.controllers.privatemessages_controller
+  /privatemessages/{userId}:
+    get:
+      tags:
+      - privatemessages
+      summary: Get private messages (already read/not read/all) from specific user
+      operationId: privatemessages_get
+      parameters:
+      - name: token
+        in: header
+        description: User token
+        required: true
+        style: simple
+        explode: true
+        schema:
+          type: string
+      - name: userId
+        in: path
+        description: ID of messages sender
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: integer
+          description: Unique identifier for the user that the chat is with
+          example: 0
+      - name: onlyOldNew
+        in: query
+        description: Filter for (0) only read / (1) only unread messages / (null)
+          all
+        required: false
+        style: form
+        explode: true
+        schema:
+          type: boolean
+      responses:
+        "200":
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PrivateMessage'
+                x-content-type: application/json
+        "400":
+          description: Invalid ID supplied
+        "401":
+          description: Unauthorized
+      x-openapi-router-controller: swagger_server.controllers.privatemessages_controller
+  /privatemessages/{userId}/numberOfUnread:
+    get:
+      tags:
+      - privatemessages
+      summary: Get number of unread private messages from specific user
+      operationId: privatemessages_numberofread_get
+      parameters:
+      - name: token
+        in: header
+        description: User token
+        required: true
+        style: simple
+        explode: true
+        schema:
+          type: string
+      - name: userId
+        in: path
+        description: ID of messages sender
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: integer
+          description: Unique identifier for the user that the chat is with
+          example: 0
+      responses:
+        "200":
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                type: integer
+                x-content-type: application/json
+        "400":
+          description: Invalid ID supplied
+        "401":
+          description: Unauthorized
+      x-openapi-router-controller: swagger_server.controllers.privatemessages_controller
+  /privatemessages/{userId}/lastMsgTime:
+    get:
+      tags:
+      - privatemessages
+      summary: Get last private message send time in chat with specific user
+      operationId: privatemessages_lastmsgtime_get
+      parameters:
+      - name: token
+        in: header
+        description: User token
+        required: true
+        style: simple
+        explode: true
+        schema:
+          type: string
+      - name: userId
+        in: path
+        description: ID of messages sender/receiver
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: integer
+          description: Unique identifier for the user that the chat is with
+          example: 0
+      responses:
+        "200":
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                type: string
+                description: The date and time the last message was sent
+                format: date-time
+                x-content-type: application/json
+        "400":
+          description: Invalid ID supplied
+        "401":
+          description: Unauthorized
+        "409":
+          description: There are no any messages yet
+      x-openapi-router-controller: swagger_server.controllers.privatemessages_controller
+  /privatemesages/{privateMessageId}/markAsRead:
+    patch:
+      tags:
+      - privatemessages
+      summary: Mark specific private message as already read
+      operationId: privatemessages_markread_patch
+      parameters:
+      - name: token
+        in: header
+        description: User token
+        required: true
+        style: simple
+        explode: true
+        schema:
+          type: string
+      - name: privateMessageId
+        in: path
+        description: ID of private message
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: integer
+          description: Unique identifier for the private message
+          example: 0
+      responses:
+        "200":
+          description: successful operation
+        "400":
+          description: Invalid ID supplied
+        "401":
+          description: Unauthorized
+      x-openapi-router-controller: swagger_server.controllers.privatemessages_controller
+  /broadcastmessages:
+    get:
+      tags:
+      - broadcastmessages
+      summary: Get broadcast messages (already read/not read/all)
+      operationId: broadcastmessages_get
+      parameters:
+      - name: token
+        in: header
+        description: User token
+        required: true
+        style: simple
+        explode: true
+        schema:
+          type: string
+      - name: onlyOldNew
+        in: query
+        description: Filter for (0) only read / (1) only unread messages / (null)
+          all
+        required: false
+        style: form
+        explode: true
+        schema:
+          type: boolean
+      responses:
+        "200":
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/BroadcastMessage'
+                x-content-type: application/json
+        "401":
+          description: Unauthorized
+      x-openapi-router-controller: swagger_server.controllers.broadcastmessages_controller
+    post:
+      tags:
+      - broadcastmessages
+      summary: Post new broadcast message
+      operationId: broadcastmessages_post
+      parameters:
+      - name: token
+        in: header
+        description: User token
+        required: true
+        style: simple
+        explode: true
+        schema:
+          type: string
+      requestBody:
+        $ref: '#/components/requestBodies/NewBroadcastMessage'
+      responses:
+        "201":
+          description: "Successful, new message send"
+        "401":
+          description: Unauthorized
+      x-openapi-router-controller: swagger_server.controllers.broadcastmessages_controller
+  /broadcastmessages/numberOfUnread:
+    get:
+      tags:
+      - broadcastmessages
+      summary: Get number of unread broadcast messages
+      operationId: broadcastmessages_numberofread_get
+      parameters:
+      - name: token
+        in: header
+        description: User token
+        required: true
+        style: simple
+        explode: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                type: integer
+                x-content-type: application/json
+        "401":
+          description: Unauthorized
+      x-openapi-router-controller: swagger_server.controllers.broadcastmessages_controller
+  /broadcastmessages/lastMsgTime:
+    get:
+      tags:
+      - broadcastmessages
+      summary: Get last broadcast message send time
+      operationId: broadcastmessages_lastmsgtime_get
+      parameters:
+      - name: token
+        in: header
+        description: User token
+        required: true
+        style: simple
+        explode: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                type: string
+                description: The date and time the last message was sent
+                format: date-time
+                x-content-type: application/json
+        "401":
+          description: Unauthorized
+        "409":
+          description: There are no any messages yet
+      x-openapi-router-controller: swagger_server.controllers.broadcastmessages_controller
+  /broadcastmessages/{broadcastMessageId}/markAsRead:
+    patch:
+      tags:
+      - broadcastmessages
+      summary: Mark specific broadcast message as already read
+      operationId: broadcastmessages_markread_patch
+      parameters:
+      - name: token
+        in: header
+        description: User token
+        required: true
+        style: simple
+        explode: true
+        schema:
+          type: string
+      - name: broadcastMessageId
+        in: path
+        description: ID of broadcast message
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: integer
+          description: Unique identifier for the broadcast message
+          example: 0
+      responses:
+        "200":
+          description: successful operation
+        "400":
+          description: Invalid ID supplied
+        "401":
+          description: Unauthorized
+      x-openapi-router-controller: swagger_server.controllers.broadcastmessages_controller
+components:
+  schemas:
+    User:
+      required:
+      - id
+      - login
+      type: object
+      properties:
+        id:
+          type: integer
+          description: Unique identifier for the user
+          example: 0
+        login:
+          type: string
+          description: The uniqe login of the user
+          example: Tomas1997
+      description: User that uses messenger.
+      example:
+        id: 0
+        login: Tomas1997
+    PrivateMessage:
+      required:
+      - contents
+      - id
+      - recipientId
+      - senderId
+      type: object
+      properties:
+        id:
+          type: integer
+          description: Unique identifier for the private message
+          example: 0
+        senderId:
+          type: integer
+          description: Unique identifier for the user that sent the message
+          example: 0
+        recipientId:
+          type: integer
+          description: Unique identifier for the user that is recipient of the message
+          example: 0
+        sendTime:
+          type: string
+          description: The date and time the message was sent
+          format: date-time
+          example: 2017-07-21T17:32:28Z
+        readStatus:
+          type: boolean
+          description: Status of reading the message
+          example: false
+        contents:
+          type: string
+          description: Proper contents of the message
+          example: "Hi, Jack! How are you?"
+      description: Private message from one to another user
+      example:
+        readStatus: false
+        senderId: 0
+        contents: "Hi, Jack! How are you?"
+        recipientId: 0
+        id: 0
+        sendTime: 2017-07-21T17:32:28Z
+    BroadcastMessage:
+      required:
+      - contents
+      - id
+      - senderId
+      type: object
+      properties:
+        id:
+          type: integer
+          description: Unique identifier for the broadcast message
+          example: 0
+        senderId:
+          type: integer
+          description: Unique identifier for the user that sent the message
+          example: 0
+        sendTime:
+          type: string
+          description: The date and time the message was sent
+          format: date-time
+          example: 2017-07-21T17:32:28Z
+        readBy:
+          type: array
+          items:
+            type: integer
+            description: Unique identifier for the user that read the message
+            example: 0
+        contents:
+          type: string
+          description: Proper contents of the message
+          example: "Hi, everyone! How are you?"
+      description: Message from one to all users
+      example:
+        senderId: 0
+        contents: "Hi, everyone! How are you?"
+        readBy:
+        - 0
+        - 0
+        id: 0
+        sendTime: 2017-07-21T17:32:28Z
+    NewUser:
+      required:
+      - login
+      - password
+      type: object
+      properties:
+        login:
+          type: string
+          description: The uniqe login of the user
+          example: Tomas1997
+        password:
+          type: string
+          description: Password of the user
+          example: foo-passx_bar123
+      description: New user that uses messenger.
+    NewPrivateMessage:
+      required:
+      - contents
+      - recipientId
+      type: object
+      properties:
+        recipientId:
+          type: integer
+          description: Unique identifier for the recipient user
+          example: 0
+        contents:
+          type: string
+          description: Proper contents of the message
+          example: "Hi, Jack! How are you?"
+      description: New private message to another user
+    NewBroadcastMessage:
+      required:
+      - contents
+      type: object
+      properties:
+        contents:
+          type: string
+          description: Proper contents of the message
+          example: "Hi, everyone! How are you?"
+      description: New message to all users
+  requestBodies:
+    NewUser:
+      description: User object that needs to be added to the system
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/NewUser'
+      required: true
+    NewPrivateMessage:
+      description: Private message object that needs to be added to the system
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/NewPrivateMessage'
+      required: true
+    NewBroadcastMessage:
+      description: Broadcast message object that needs to be added to the system
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/NewBroadcastMessage'
+      required: true
+

@@ -17,8 +17,11 @@ class PrivateMessage(Base):
     __tablename__ = 'PrivateMessages'
     id = Column(Integer, primary_key=True)
     senderId = Column(Integer, ForeignKey('Users.id'), nullable=False)
+    sender = relationship(User, foreign_keys=[senderId])
     recipientId = Column(Integer, ForeignKey('Users.id'), nullable=False)
-    user = relationship(User)
+    recipient = relationship(User, foreign_keys=[recipientId])
+    #user = relationship(User)
+    
     sendTime = Column(DateTime)
     readStatus = Column(Boolean, nullable=False, default=0)
 
